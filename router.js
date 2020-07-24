@@ -5,61 +5,49 @@ const router = express()
 const LISTENING_PORT = 3000
 
 
-router.get('/game', (req, res) => {
-	names = req.query.names
-	games = database.fetch_games_by_names(names)
-	if (games.length == 0)
-		res.status(404).send("No games found for these names.")
-	else
-		res.status(200).send(games)
+router.use(express.json());
 
-	console.log("Games found by names:", games)
+router.get('/game', (req, res) => {
+	database.fetch_game_by_name(req.query.name, (result) => {
+		if (result.length == 0)
+			res.status(404).send("No games found for this name.")
+		else
+			res.status(200).send(result)
+	})
 })
 
 
 router.get('/game/:ids', (req, res) => {
-	ids = req.params.ids.split("+")
-	games = database.get_game_by_ids(ids)
-	if (games.length == 0)
-		res.status(404).send("No games found for these IDs.")
-	else
-		res.status(200).send(games)
-
-	console.log("Games found by IDs:", games)
+	ids = req.params.ids.split(",")
+	database.get_game_by_ids(ids, (result) => {
+		if (result.length == 0)
+			res.status(404).send("No games found for these IDs.")
+		else
+			res.status(200).send(result)
+	})
 })
 
 
 router.delete('/game/:id', (req, res) => {
-	success = database.delete_game(req.params.id)
-	res.status(success ? 200 : 400).send()
+	database.delete_game_by_id(req.params.id, (success) => {
+		res.status(success ? 200 : 400).send("Success: " + success)
+	})
 })
 
 
 router.patch('/game/:id', (req, res) => {
-	success = database.update_game(req.body)
-	res.status(success ? 200 : 400).send()
+	success = database.update_game(req.params.id, req.body, (success) => {
+		res.status(success ? 200 : 400).send("Success: " + success)
+	})
 })
 
 
 router.post('/game', (req, res) => {
-	// for (key in req.body) {
-	// 	if (req.body[key] === undefined || req.body[key] === null)
-	// 		res.status(500).send("Bad JSON values.")
-	// 		return
-	// }
-
-	id = database.create_game(req.body)
-	res.status(id != undefined ? 200 : 400).send(id)
+	database.create_game(req.body, (result_id) => {
+		res.status(result_id != undefined ? 200 : 400).send("Created game " + result_id)
+	})
 })
 
-
-
-// router.get('/publisher', (req, res) => {
-// 	//res.status(500).send('Bad request.')
-// })
-
-
-router.use(express.json());
 
 router.listen(LISTENING_PORT, () => {
 	console.log('Router is now listening on port', LISTENING_PORT)
